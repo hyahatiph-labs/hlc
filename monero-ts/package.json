@@ -16,7 +16,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/hyahatiph-labs/hlc.git#main"
+    "url": "https://github.com/hyahatiph-labs/hlc/tree/main/monero-ts"
   },
   "keywords": [
     "monero",
@@ -27,7 +27,7 @@
   "bugs": {
     "url": "https://github.com/hyahatiph-labs/hlc/issues"
   },
-  "homepage": "https://github.com/hyahatiph-labs/hlc/tree/main#readme",
+  "homepage": "https://github.com/hyahatiph-labs/hlc",
   "dependencies": {
     "@noble/ed25519": "^1.6.0",
     "keccak": "^3.0.2"
