@@ -16,5 +16,5 @@
             ]
         }
     },
-    "include": [ "**/src/", "config.ts", "util.ts", "monero.ts", "logging.ts" ]
+    "include": [ "**/src/", "config.ts", "util.ts", "monero.ts" ]
 }

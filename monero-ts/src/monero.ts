@@ -8,7 +8,6 @@
 */
 
 import * as ed25519 from '@noble/ed25519';
-import * as Logging from './logging';
 import * as Utilities from './util';
 import * as Config from './config';
 import keccak from 'keccak';
@@ -19,22 +18,23 @@ import keccak from 'keccak';
  */
 export const generateKeys = async (): Promise<Utilities.Keys> => {
     try {
-        const seed = ed25519.utils.bytesToHex(ed25519.utils.randomBytes(Config.KEY_SIZE));
+        const seed = ed25519.utils.bytesToHex(
+            ed25519.utils.randomBytes(Config.KEY_SIZE)
+        );
         const sski = ed25519.Point.fromHex(seed).y;
-        const modulo = ed25519.utils.mod(sski, ed25519.CURVE.l);
+        const sskm = ed25519.utils.mod(sski, ed25519.CURVE.l);
         const ssk = ed25519.utils.bytesToHex(
-            new Uint8Array(await Utilities.bn2byteArray(modulo))
+            new Uint8Array(await Utilities.bn2byteArray(sskm))
         );
         const svki = await Utilities.array2bn(
             new Uint8Array(keccak(Config.KECCAK_256).update(ssk).digest())
         );
-        const modulo2 = ed25519.utils.mod(svki, ed25519.CURVE.l);
+        const svkm = ed25519.utils.mod(svki, ed25519.CURVE.l);
         const svk = ed25519.utils.bytesToHex(
-            new Uint8Array(await Utilities.bn2byteArray(modulo2))
+            new Uint8Array(await Utilities.bn2byteArray(svkm))
         );
         return { ssk, svk };
     } catch (e) { // if at first you don't succeed...
-        Logging.log(`${e}`, Logging.LogLevel.ERROR);
         return generateKeys();
     }
 }
