@@ -3,7 +3,7 @@
  * @param n - bigint value
  * @returns byte array
  */
-export const bn2byteArray = (n: bigint): number[] => {
+export const bn2byteArray = async (n: bigint): Promise<number[]> => {
     // we want to represent the input as a 32-byte array
     const a: number[] = [0, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0,
@@ -22,7 +22,7 @@ export const bn2byteArray = (n: bigint): number[] => {
  * @param a - byte array
  * @returns 
  */
-export const array2bn = (a: Uint8Array): bigint => {
+export const array2bn = async (a: Uint8Array): Promise<bigint> => {
     let value = 0n;
     for (let i = a.length - 1; i >= 0; --i) {
         value = (value * 256n) + BigInt(a[i]);
