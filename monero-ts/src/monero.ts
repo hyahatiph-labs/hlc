@@ -16,25 +16,12 @@ import keccak from 'keccak';
  * Generate Monero private and public keys
  * @returns {Utilities.Keys} - Monero keys
  */
-export const generateKeys = async (): Promise<Utilities.Keys> => {
-    try {
-        const seed = ed25519.utils.bytesToHex(
-            ed25519.utils.randomBytes(Config.KEY_SIZE)
-        );
-        const sski = ed25519.Point.fromHex(seed).y;
-        const sskm = ed25519.utils.mod(sski, ed25519.CURVE.l);
-        const ssk = ed25519.utils.bytesToHex(
-            new Uint8Array(await Utilities.bn2byteArray(sskm))
-        );
-        const svki = await Utilities.array2bn(
-            new Uint8Array(keccak(Config.KECCAK_256).update(ssk).digest())
-        );
-        const svkm = ed25519.utils.mod(svki, ed25519.CURVE.l);
-        const svk = ed25519.utils.bytesToHex(
-            new Uint8Array(await Utilities.bn2byteArray(svkm))
-        );
-        return { ssk, svk };
-    } catch (e) { // if at first you don't succeed...
-        return generateKeys();
-    }
+export const generate_keys = async (): Promise<Utilities.Keys> => {
+    const seed = new Uint8Array(ed25519.utils.randomBytes(Config.KEY_SIZE));
+    const ssk = await Utilities.sc_reduce_32(seed);
+    const hash = new Uint8Array(keccak(Config.KECCAK_256).update(ssk).digest());
+    const svk = await Utilities.sc_reduce_32(hash);
+    const psk = "TODO: public spend key";
+    const pvk = "TODO: public view key";
+    return { ssk, svk, psk, pvk };
 }
