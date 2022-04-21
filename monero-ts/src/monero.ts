@@ -15,7 +15,7 @@ import * as ed25519 from '@noble/ed25519';
 
 /**
  * Generate Monero private and public keys
- * @returns {Utilities.Keys} - Monero keys
+ * @returns {Utilities.Keys} Monero keys
  */
 export const generate_keys = async (): Promise<Utilities.Keys> => {
     const seed = new Uint8Array(ed25519.utils.randomBytes(Config.KEY_SIZE));
@@ -31,7 +31,7 @@ export const generate_keys = async (): Promise<Utilities.Keys> => {
  * Generate a standard monero address
  * @param nb {Utilities.NetworkByte} - network byte
  * @param keys {Utilities.Keys} - monero keys
- * @returns {string} - standard address
+ * @returns {Promise<string>} standard address
  */
 export const generate_standard_address = async (
     nb: Utilities.NetworkByte, keys: Utilities.Keys): Promise<string> => {
