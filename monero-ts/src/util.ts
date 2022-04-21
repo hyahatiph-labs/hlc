@@ -67,3 +67,13 @@ export interface Keys {
      */
     pvk: string
 }
+
+/**
+ * Monero network bytes as defined in:
+ * https://github.com/monero-project/monero/blob/master/src/cryptonote_config.h
+ */
+export enum NetworkByte {
+    MAINNET = '12',
+    STAGENET = '18',
+    TESTNET = '35'
+}

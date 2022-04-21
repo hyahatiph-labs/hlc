@@ -29,13 +29,15 @@ export const generate_keys = async (): Promise<Utilities.Keys> => {
 
 /**
  * Generate a standard monero address
- * @param nb {string} - network byte
+ * @param nb {Utilities.NetworkByte} - network byte
  * @param keys {Utilities.Keys} - monero keys
  * @returns {string} - standard address
  */
-export const generate_standard_address = async (nb: string, keys: Utilities.Keys): Promise<string> => {
+export const generate_standard_address = async (
+    nb: Utilities.NetworkByte, keys: Utilities.Keys): Promise<string> => {
     const data = `${nb}${keys.psk}${keys.pvk}`;
-    const aHash = keccak(Config.KECCAK_256).update(Buffer.from(data, Config.HEX)).digest(Config.HEX);
+    const aHash = keccak(Config.KECCAK_256)
+        .update(Buffer.from(data, Config.HEX)).digest(Config.HEX);
     const checksum = aHash.slice(0, 8);
     return base58xmr.encode(Buffer.from(`${data}${checksum}`, Config.HEX));
 }
