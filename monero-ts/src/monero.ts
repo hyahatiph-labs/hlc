@@ -13,6 +13,9 @@ import * as Utilities from './util';
 import {base58xmr} from '@scure/base';
 import * as ed25519 from '@noble/ed25519';
 
+// Address Generation Reference:
+// https://xmr.llcoins.net/addresstests.html
+
 /**
  * Generate Monero private and public keys
  * @returns {Utilities.Keys} Monero keys
@@ -40,4 +43,24 @@ export const generate_standard_address = async (
         .update(Buffer.from(data, Config.HEX)).digest(Config.HEX);
     const checksum = aHash.slice(0, 8);
     return base58xmr.encode(Buffer.from(`${data}${checksum}`, Config.HEX));
+}
+
+/**
+ * Validate a standard, integrated or subaddress.
+ * @param {string} a - address to validate 
+ * @returns {Promise<boolean>} true if address valid
+ */
+export const validate_address = async (a: string): Promise<boolean> => {
+    if (a.length !== Config.VALID_STANDARD_ADDRESS_LENGTH &&
+        a.length !== Config.VALID_INTEGRATED_ADDRESS_LENGTH) return false
+    const data = Buffer.from(base58xmr.decode(a)).toString(Config.HEX);
+    const checksum = data.slice(data.length - 8, data.length + 1);
+    const hash = keccak(Config.KECCAK_256)
+        .update(Buffer.from(data.slice(0, data.length - 8), Config.HEX))
+        .digest(Config.HEX);
+    if (hash.slice(0, 8) !== checksum) return false;
+    const nb = Object.values(Utilities.NetworkByte)
+        .includes(data.slice(0, 2) as Utilities.NetworkByte)
+    if (!nb) return false
+    return true;
 }

@@ -69,11 +69,21 @@ export interface Keys {
 }
 
 /**
+ * ```
+ * SA_ - Subaddress
+ * I_ - Integrated address
+ * ```
  * Monero network bytes as defined in:
- * https://github.com/monero-project/monero/blob/master/src/cryptonote_config.h
+ * [monero-project/monero](https://github.com/monero-project/monero/blob/master/src/cryptonote_config.h)
  */
 export enum NetworkByte {
     MAINNET = '12',
     STAGENET = '18',
-    TESTNET = '35'
+    TESTNET = '35',
+    SA_MAINNET = '2a',
+    SA_STAGENET = '24',
+    SA_TESTNET = '3f',
+    I_MAINNET = '13',
+    I_STAGENET = '19',
+    I_TESTNET = '26'
 }
