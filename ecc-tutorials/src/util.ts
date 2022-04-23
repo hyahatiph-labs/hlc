@@ -45,3 +45,18 @@ export const sc_reduce_32 = async (v: Uint8Array): Promise<string> => {
         new Uint8Array(await big_int_to_byte_array(m))
     );
 }
+
+/**
+ * Scalars check for `0 -> (l - 1)`
+ * @param {bigint} v - possible scalar value
+ * @returns overflowed scalar or within bounds value
+ */
+export const l_overflow_check = async (v: bigint): Promise<bigint> => {
+    if (v > ed25519.CURVE.l) {
+        return v - ed25519.CURVE.l;
+    }
+    if (v < BigInt("0")) {
+        return ed25519.CURVE.l - (v * BigInt("-1"));
+    }
+    return v;
+}
