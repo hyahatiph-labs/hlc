@@ -23,7 +23,9 @@ import * as ed25519 from '@noble/ed25519';
 export const generate_keys = async (): Promise<Utilities.Keys> => {
     const seed = new Uint8Array(ed25519.utils.randomBytes(Config.KEY_SIZE));
     const ssk = await Utilities.sc_reduce_32(seed);
-    const hash = new Uint8Array(keccak(Config.KECCAK_256).update(ssk).digest());
+    const hash = new Uint8Array(
+        keccak(Config.KECCAK_256).update(Buffer.from(ssk, Config.HEX)
+    ).digest());
     const svk = await Utilities.sc_reduce_32(hash);
     const psk = ed25519.utils.bytesToHex(ed25519.curve25519.scalarMultBase(ssk));
     const pvk = ed25519.utils.bytesToHex(ed25519.curve25519.scalarMultBase(svk));
