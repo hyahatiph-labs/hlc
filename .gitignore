@@ -105,3 +105,6 @@ dist
 
 # VSCode
 .vscode/
+
+# xmr-guides
+**/xmr-dev-guides/wallets/dev*
