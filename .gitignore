@@ -108,3 +108,4 @@ dist
 
 # xmr-guides
 **/xmr-dev-guides/wallets/dev*
+.ipynb_checkpoints
