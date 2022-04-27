@@ -12,6 +12,7 @@ Learn at your own pace. Build cool stuff with Monero.
 * node.js install with [nvm](https://github.com/nvm-sh/nvm)
     * `nvm install 16`
     * `node -v && npm -v`
+    * `source .profile` (in case shell doesn't pick up nvm download)
 * [Jupyter](https://jupyter.org/install)
 * [tslab](https://github.com/yunabe/tslab)
 * VSCode with Jupyter Notebook extension, optional but hella clutch
@@ -25,6 +26,14 @@ If you made it through all that you are a candidate
 * Bookmark monero-javascript documentation
     * open locally in your browser
     * `file:///${HOME}/hlc/xmr-dev-guides/node_modules/monero-javascript/docs/index.html`
+
+### Python
+
+More than one way to skin a cat.
+
+* https://pypi.org/project/monero/
+* noteobooks are in ./python
+* `pip install monero`
 
 ## Syllabus
 
