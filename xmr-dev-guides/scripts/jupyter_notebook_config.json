@@ -1,0 +1,13 @@
+{
+    "NotebookApp": {
+      "password": "argon2:$argon2id$v=19$m=10240,t=10,p=8$l5GyqsLGqXM6cv2a4AnXbg$Y8N5DTzREM647lacFlTFtg",
+      "ip": "*",
+      "allow_origin": "*",
+      "allow_remote_access": true,
+      "open_browser": false,
+      "websocket_compression_options": {},
+       "certfile": "/home/dev/.jupyter/service.pem",
+       "keyfile": "/home/dev/.jupyter/service-key.pem",
+       "notebook_dir": "/home/dev/hlc/xmr-dev-guides"
+    }
+}

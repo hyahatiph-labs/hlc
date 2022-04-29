@@ -35,6 +35,10 @@ More than one way to skin a cat.
 * noteobooks are in ./python
 * `pip install monero`
 
+### Docker
+
+see [docker.md](./docker.md)
+
 ## Syllabus
 
 If you already know everything from the prerequisites then you probably will be bored here.
