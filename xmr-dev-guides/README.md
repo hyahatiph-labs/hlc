@@ -5,6 +5,12 @@ Learn at your own pace. Build cool stuff with Monero.
 
 ![dev-guide](./xmr-guide.png)
 
+
+Spin up your own Jupyter Hub classrooms FOSS-style
+
+https://user-images.githubusercontent.com/13033037/166111393-63f759ea-4db9-461a-aa84-2f6d2c924d6c.mp4
+
+
 ## Prerequisites
 
 * Linux - optional but highly recommended (ubuntu and mint are user friendly)
