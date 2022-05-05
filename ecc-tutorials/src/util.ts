@@ -173,11 +173,145 @@ export const rnd_scalar = async (): Promise<Scalar> => {
 };
 
 /**
+ * Create a Point Vector
+ * @param {string[]} n - big integer array
+ * @returns scalar vector
+ */
+ export class PointVector {
+  private value: Promise<ed25519.Point[]>;
+
+  constructor(s: string[]) {
+    this.value = this.set_value(s);
+  }
+
+  /**
+   * Set the points of a valid point vector
+   * @param {string[]} sv - scalar array
+   */
+  private set_value = async (sv: string[]): Promise<ed25519.Point[]> => {
+    const r: ed25519.Point[] = [];
+    sv.forEach(async (s, i) => (r[i] = ed25519.Point.fromHex(s)));
+    return r;
+  };
+
+  /**
+   * Get the points of a valid scalar vector
+   */
+  public get_value = (): Promise<ed25519.Point[]> => this.value;
+
+  /**
+   * Sum point vector
+   * @param {PointVector} pv - point vector to sum
+   * @returns {Promise<PointVector>}
+   */
+  public add = async (pv: PointVector): Promise<PointVector> => {
+    const self = await this.get_value();
+    const value = await pv.get_value();
+    const r: string[] = [];
+    if (await this.is_valid_length(self, value)) {
+      for (let i = 0; i < value.length; ++i) {
+        r[i] = self[i].add(value[i]).toHex();
+      }
+    }
+    return new PointVector(r);
+  };
+
+  /**
+   * Subtract point vector
+   * @param {PointVector} sv - point vector to sum
+   * @returns {Promise<PointVector>}
+   */
+  public subtract = async (sv: PointVector): Promise<PointVector> => {
+    const self = await this.get_value();
+    const value = await sv.get_value();
+    const r: string[] = [];
+    if (await this.is_valid_length(self, value)) {
+      for (let i = 0; i < value.length; ++i) {
+        r[i] = self[i].subtract(value[i]).toHex();
+      }
+    }
+    return new PointVector(r);
+  };
+
+  /**
+   * Multiply point vector by scalar vector or scalar
+   * @param {ScalarVector | Scalar} sv - scalar vector or scalar to multiply
+   * @returns {Promise<PointVector>}
+   */
+  public multiply = async (sv: ScalarVector | Scalar): Promise<PointVector> => {
+    const self = await this.get_value();
+    const sv_value: Scalar[] = sv instanceof ScalarVector ? await sv.get_value() : null;
+    const s_value: Scalar = sv instanceof Scalar ? sv : null;
+    const r: string[] = [];
+    if (sv_value && (await this.is_valid_length(self, sv_value))) {
+      // PointVector - ScalarVector: Hadamard Product 
+      for (let i = 0; i < sv_value.length; ++i) {
+        r[i] = self[i].multiply(await sv_value[i].get_value()).toHex();
+      }
+    }
+    if (s_value) {
+      for (let i = 0; i < self.length; ++i) {
+        r[i] = self[i].multiply(await s_value.get_value()).toHex();
+      }
+    }
+    return new PointVector(r);
+  };
+
+  /**
+   * Negate the values in this point vector
+   * @returns {Promise<PointVector>}
+   */
+  public negate = async (): Promise<PointVector> => {
+      const ba: string[] = [];
+      (
+        await this.get_value()).forEach(
+          async p => ba.push(p.negate().toHex())
+      )
+      return new PointVector(ba);
+  }
+
+  /**
+   * PointVector ** ScalarVector: Dot product
+   * @param sv - scalar vector
+   * @returns {ed25519.Point}
+   */
+  public pow = async (sv: ScalarVector): Promise<ed25519.Point> => {
+    if (await this.is_valid_length(await this.get_value(), await sv.get_value())) {
+      return this.multiexp(sv);
+    }
+  }
+
+  private multiexp = async (sv: ScalarVector): Promise<ed25519.Point> => {
+    if (await this.is_valid_length(await this.get_value(), await sv.get_value())) {
+      if ( await (await sv.get_value()).length === 0)
+        return ed25519.Point.ZERO;
+
+      const bucket: ed25519.Point[] = [];
+
+      // TODO: Perform a multiscalar multiplication using a simplified Pippenger algorithm
+      
+    }
+    return ed25519.Point.ZERO;
+  }
+
+  private is_valid_length = async (
+    self: ed25519.Point[],
+    v: ed25519.Point[] | Scalar[]): Promise<boolean> => {
+    if (v.length !== self.length) {
+      throw new Error("Point vectors must be the same length.");
+    }
+    return true;
+  };
+
+}
+
+/**
  * Create a Scalar Vector
  * @param {bigint[]} n - big integer array
  * @returns scalar vector
  */
 export class ScalarVector {
+
   private value: Promise<Scalar[]>;
 
   constructor(v: bigint[]) {
@@ -281,7 +415,7 @@ export class ScalarVector {
    */
   public sum_of_all = async (): Promise<Scalar> => {
       const ba: bigint[] = [];
-      await (await this.get_value()).forEach(async s => ba.push(await s.get_value()))
+      await (await this.get_value()).forEach(async s => ba.push(await s.get_value()));
       return new Scalar(ba.reduce((a, b) => a + b));
   };
 
@@ -291,19 +425,45 @@ export class ScalarVector {
    */
   public negate = async (): Promise<ScalarVector> => {
       const ba: bigint[] = [];
-      await (await this.get_value()).forEach(async s => ba.push(await s.get_value() * BigInt("-1")))
+      await ( await this.get_value())
+        .forEach(async s => ba.push(await s.get_value() * BigInt("-1"))
+      )
       return new ScalarVector(ba);
   }
 
-  private is_valid_length = async (
-    self: Scalar[],
-    v: Scalar[]
-  ): Promise<boolean> => {
+  /**
+   * Multiscalar multiplication
+   * @param {PointVector} pv - point vector
+   * @param {ScalarVector} sv - scalar vector 
+   * @returns {Promise<Scalar | ed25519.Point>} - scalar or point
+   */
+  public pow = async (
+    pv: PointVector,
+    sv: ScalarVector): Promise<ed25519.Point | Scalar> => {
+    const self = await this.get_value();
+    const sv_value: Scalar[] = sv instanceof ScalarVector 
+      ? await sv.get_value() : null;
+    const pv_value: ed25519.Point[] = pv instanceof PointVector 
+      ? await pv.get_value() : null;
+    // ScalarVector**ScalarVector: inner product
+    if (sv_value && await this.is_valid_length(sv_value, pv_value)) {
+      let r: Scalar = new Scalar(BigInt("0"));
+      self.forEach(async (s, i) => {
+        r = await r.add(
+          await (await s.multiply(await sv_value[i].get_hex_value())).get_hex_value()
+        )
+      });
+      return r;
+    }
+    if (pv_value) { return pv.pow(this); }
+  }
+
+  private is_valid_length = async (self: Scalar[],
+    v: Scalar[] | ed25519.Point[]): Promise<boolean> => {
     if (v.length !== self.length) {
       throw new Error("Vectors must be the same length.");
     }
     return true;
   };
-}
 
-// TODO: PointVector class
+}
