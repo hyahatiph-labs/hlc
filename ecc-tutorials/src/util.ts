@@ -19,6 +19,7 @@ export const big_int_to_byte_array = async (n: bigint): Promise<number[]> => {
     return a;
 };
 
+
 /**
  * Convert Uint8Array to BigInteger
  * @param {Uint8Array} a - byte array
@@ -52,13 +53,14 @@ export const sc_reduce_32 = async (v: Uint8Array): Promise<string> => {
  * @returns overflowed scalar or within bounds value
  */
 export const l_overflow_check = async (v: bigint): Promise<bigint> => {
+    let r = v;
     if (v > ed25519.CURVE.l) {
-        return v - ed25519.CURVE.l;
+        r = v - ed25519.CURVE.l;
     }
     if (v < BigInt("0")) {
-        return ed25519.CURVE.l - (v * BigInt("-1"));
+        r = ed25519.CURVE.l - (v * BigInt("-1"));
     }
-    return v;
+    return r > ed25519.CURVE.l || r < BigInt("0") ? await l_overflow_check(r) : r;
 }
 
 /**
@@ -84,11 +86,9 @@ export class Scalar {
    * @returns {Promise<string>}
    */
   private set_hex_value = async (n: bigint): Promise<string> => {
-    const m = ed25519.utils.mod(n, ed25519.CURVE.l);
-    const check_m = await l_overflow_check(m);
-    return ed25519.utils.bytesToHex(
-      new Uint8Array(await big_int_to_byte_array(check_m))
-    );
+    return Buffer.from(
+      new Uint8Array(await big_int_to_byte_array(n))
+    ).toString('hex');
   };
 
   /**
@@ -96,8 +96,7 @@ export class Scalar {
    * @param {bigint} n - big integer value
    */
   private set_value = async (n: bigint): Promise<bigint> => {
-    const m = ed25519.utils.mod(n, ed25519.CURVE.l);
-    return l_overflow_check(m);
+    return n;
   };
 
   /**
@@ -126,7 +125,7 @@ export class Scalar {
    * @returns {Promise<Scalar>}
    */
   public subtract = async (v: string): Promise<Scalar> => {
-    const x = await byte_array_to_big_int(Buffer.from(await v, "hex"));
+    const x = await byte_array_to_big_int(Buffer.from(v, "hex"));
     return new Scalar(await l_overflow_check((await this.value) - x));
   };
 
@@ -145,11 +144,11 @@ export class Scalar {
    * @param {string} v - value to divide
    * @returns {Promise<Scalar>} ` x * 1/x`
    */
-  public divide = async (v: string): Promise<Scalar> => {
-    const x = await byte_array_to_big_int(Buffer.from(await v, "hex"));
-    const inv = ed25519.utils.invert(x, ed25519.CURVE.l);
-    const quot = await l_overflow_check((await this.value) * inv);
-    return new Scalar(await l_overflow_check(x * quot));
+  public divide = async (v: bigint): Promise<Scalar> => {
+    return new Scalar(await l_overflow_check(
+        await this.get_value() * ed25519.utils.invert(v, ed25519.CURVE.l)
+      )
+    );
   };
 
   /**
@@ -206,12 +205,12 @@ export const rnd_scalar = async (): Promise<Scalar> => {
    * @returns {Promise<PointVector>}
    */
   public add = async (pv: PointVector): Promise<PointVector> => {
-    const self = await this.get_value();
-    const value = await pv.get_value();
+    const v = await pv.get_value();
+    const t = await this.get_value();
     const r: string[] = [];
-    if (await this.is_valid_length(self, value)) {
-      for (let i = 0; i < value.length; ++i) {
-        r[i] = self[i].add(value[i]).toHex();
+    if (await this.is_valid_length(v)) {
+      for (let i = 0; i < v.length; ++i) {
+        r[i] = await t[i].add(v[i]).toHex();
       }
     }
     return new PointVector(r);
@@ -223,13 +222,12 @@ export const rnd_scalar = async (): Promise<Scalar> => {
    * @returns {Promise<PointVector>}
    */
   public subtract = async (sv: PointVector): Promise<PointVector> => {
-    const self = await this.get_value();
-    const value = await sv.get_value();
+    const v = await sv.get_value();
+    const t = await this.get_value();
     const r: string[] = [];
-    if (await this.is_valid_length(self, value)) {
-      for (let i = 0; i < value.length; ++i) {
-        r[i] = self[i].subtract(value[i]).toHex();
-      }
+    if (await this.is_valid_length(v)) {
+      for (let i = 0; i < v.length; ++i)
+        r[i] = t[i].subtract(v[i]).toHex();
     }
     return new PointVector(r);
   };
@@ -240,19 +238,19 @@ export const rnd_scalar = async (): Promise<Scalar> => {
    * @returns {Promise<PointVector>}
    */
   public multiply = async (sv: ScalarVector | Scalar): Promise<PointVector> => {
-    const self = await this.get_value();
+    const t = await this.get_value();
     const sv_value: Scalar[] = sv instanceof ScalarVector ? await sv.get_value() : null;
     const s_value: Scalar = sv instanceof Scalar ? sv : null;
     const r: string[] = [];
-    if (sv_value && (await this.is_valid_length(self, sv_value))) {
+    if (sv_value && (await this.is_valid_length(sv_value))) {
       // PointVector - ScalarVector: Hadamard Product 
       for (let i = 0; i < sv_value.length; ++i) {
-        r[i] = self[i].multiply(await sv_value[i].get_value()).toHex();
+        r[i] = t[i].multiply(await sv_value[i].get_value()).toHex();
       }
     }
     if (s_value) {
-      for (let i = 0; i < self.length; ++i) {
-        r[i] = self[i].multiply(await s_value.get_value()).toHex();
+      for (let i = 0; i < t.length; ++i) {
+        r[i] = t[i].multiply(await s_value.get_value()).toHex();
       }
     }
     return new PointVector(r);
@@ -277,7 +275,7 @@ export const rnd_scalar = async (): Promise<Scalar> => {
    * @returns {Promise<Scalar>} scalar
    */
   public pow = async (sv: ScalarVector): Promise<Scalar> => {
-    if (await this.is_valid_length(await this.get_value(), await sv.get_value())) {
+    if (await this.is_valid_length(await sv.get_value())) {
       return this.multiexp(sv);
     }
   }
@@ -289,7 +287,7 @@ export const rnd_scalar = async (): Promise<Scalar> => {
    * @returns {Promise<ed25519.Point>}
    */
   private multiexp = async (sv: ScalarVector): Promise<Scalar> => {
-    if (await this.is_valid_length(await this.get_value(), await sv.get_value())) {
+    if (await this.is_valid_length(await sv.get_value())) {
       if (await (await sv.get_value()).length === 0)
         return new Scalar(ed25519.Point.ZERO.y);
       let buckets: ed25519.Point[] = [];
@@ -343,10 +341,8 @@ export const rnd_scalar = async (): Promise<Scalar> => {
     }
   }
 
-  private is_valid_length = async (
-    self: ed25519.Point[],
-    v: ed25519.Point[] | Scalar[]): Promise<boolean> => {
-    if (v.length !== self.length) {
+  private is_valid_length = async (v: ed25519.Point[] | Scalar[]): Promise<boolean> => {
+    if (v.length !== await (await this.get_value()).length) {
       throw new Error("Point vectors must be the same length.");
     }
     return true;
@@ -388,12 +384,12 @@ export class ScalarVector {
    * @returns {Promise<ScalarVector>}
    */
   public add = async (sv: ScalarVector): Promise<ScalarVector> => {
-    const self = await this.get_value();
-    const value = await sv.get_value();
+    const v = await sv.get_value();
+    const t = await this.get_value();
     const r: bigint[] = [];
-    if (await this.is_valid_length(value)) {
-      for (let i = 0; i < value.length; ++i) {
-        r[i] = await (await value[i].add(await self[i].get_hex_value())).get_value();
+    if (await this.is_valid_length(v)) {
+      for (let i = 0; i < v.length; ++i) {
+        r[i] = await (await v[i].add(await t[i].get_hex_value())).get_value();
       }
     }
     return new ScalarVector(r);
@@ -405,14 +401,12 @@ export class ScalarVector {
    * @returns {Promise<ScalarVector>}
    */
   public subtract = async (sv: ScalarVector): Promise<ScalarVector> => {
-    const self = await this.get_value();
-    const value = await sv.get_value();
+    const v = await sv.get_value();
+    const t = await this.get_value();
     const r: bigint[] = [];
-    if (await this.is_valid_length(value)) {
-      for (let i = 0; i < value.length; ++i) {
-        r[i] = await (await value[i].subtract(await self[i].get_hex_value())).get_value();
-      }
-    }
+    if (await this.is_valid_length(v))
+      for (let i = 0; i < v.length; ++i)
+        r[i] = await (await t[i].subtract(await v[i].get_hex_value())).get_value();
     return new ScalarVector(r);
   };
 
@@ -422,21 +416,17 @@ export class ScalarVector {
    * @returns {Promise<ScalarVector>}
    */
   public multiply = async (sv: ScalarVector | Scalar): Promise<ScalarVector> => {
-    const self = await this.get_value();
+    const t = await this.get_value();
     const sv_value: Scalar[] = sv instanceof ScalarVector ? await sv.get_value() : null;
     const s_value: Scalar = sv instanceof Scalar ? sv : null;
     const r: bigint[] = [];
-    if (sv_value && (await this.is_valid_length(sv_value))) {
+    if (sv_value && (await this.is_valid_length(sv_value)))
       // Hadamard Product
-      for (let i = 0; i < sv_value.length; ++i) {
-        r[i] = await (await sv_value[i].multiply(await self[i].get_hex_value())).get_value();
-      }
-    }
-    if (s_value) {
-      for (let i = 0; i < self.length; ++i) {
-        r[i] = await (await self[i].multiply(await s_value.get_hex_value())).get_value();
-      }
-    }
+      for (let i = 0; i < sv_value.length; ++i) 
+        r[i] = await (await sv_value[i].multiply(await t[i].get_hex_value())).get_value();
+    if (s_value)
+      for (let i = 0; i < t.length; ++i)
+        r[i] = await (await t[i].multiply(await s_value.get_hex_value())).get_value();
     return new ScalarVector(r);
   };
 
@@ -446,14 +436,12 @@ export class ScalarVector {
    * @returns {Promise<ScalarVector>} ` x * 1/x`
    */
   public divide = async (sv: ScalarVector): Promise<ScalarVector> => {
-    const self = await this.get_value();
-    const value = await sv.get_value();
+    const v = await sv.get_value();
+    const t = await this.get_value();
     const r: bigint[] = [];
-    if (await this.is_valid_length(value)) {
-      for (let i = 0; i < value.length; ++i) {
-        r[i] = await (await value[i].divide(await self[i].get_hex_value())).get_value();
-      }
-    }
+    if (await this.is_valid_length(v))
+      for (let i = 0; i < v.length; ++i)
+        r[i] = await (await t[i].divide(await v[i].get_value())).get_value();
     return new ScalarVector(r);
   };
 
@@ -472,11 +460,15 @@ export class ScalarVector {
    * @returns {Promise<ScalarVector>}
    */
   public negate = async (): Promise<ScalarVector> => {
-      const ba: bigint[] = [];
-      await (await this.get_value())
-        .forEach(async s => ba.push(await s.get_value() * BigInt("-1"))
-      )
-      return new ScalarVector(ba);
+    const v = await this.get_value();
+    const r: bigint[] = [];
+      for (let i = 0; i < v.length; ++i) {
+        const z = new Scalar(BigInt("0"));
+        r[i] = await (
+          await z.subtract(await v[i].get_hex_value())
+          ).get_value();
+      }
+    return new ScalarVector(r);
   }
 
   /**
