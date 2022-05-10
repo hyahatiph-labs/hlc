@@ -19,7 +19,6 @@ export const big_int_to_byte_array = async (n: bigint): Promise<number[]> => {
     return a;
 };
 
-
 /**
  * Convert Uint8Array to BigInteger
  * @param {Uint8Array} a - byte array
@@ -27,9 +26,8 @@ export const big_int_to_byte_array = async (n: bigint): Promise<number[]> => {
  */
 export const byte_array_to_big_int = async (a: Uint8Array): Promise<bigint> => {
     let value = BigInt(0);
-    for (let i = a.length - 1; i >= 0; --i) {
+    for (let i = a.length - 1; i >= 0; --i)
         value = value * BigInt(256) + BigInt(a[i]);
-    }
     return value;
 };
 
@@ -39,12 +37,8 @@ export const byte_array_to_big_int = async (a: Uint8Array): Promise<bigint> => {
  * @returns {Promise<string>} hex string reduced mod l
  */
 export const sc_reduce_32 = async (v: Uint8Array): Promise<string> => {
-    const m = ed25519.utils.mod(
-        await byte_array_to_big_int(v), ed25519.CURVE.l
-    );
-    return ed25519.utils.bytesToHex(
-        new Uint8Array(await big_int_to_byte_array(m))
-    );
+    const m = ed25519.utils.mod(await byte_array_to_big_int(v), ed25519.CURVE.l);
+    return ed25519.utils.bytesToHex(new Uint8Array(await big_int_to_byte_array(m)));
 }
 
 /**
@@ -54,12 +48,8 @@ export const sc_reduce_32 = async (v: Uint8Array): Promise<string> => {
  */
 export const l_overflow_check = async (v: bigint): Promise<bigint> => {
     let r = v;
-    if (v > ed25519.CURVE.l) {
-        r = v - ed25519.CURVE.l;
-    }
-    if (v < BigInt("0")) {
-        r = ed25519.CURVE.l - (v * BigInt("-1"));
-    }
+    if (v > ed25519.CURVE.l) r = v - ed25519.CURVE.l;
+    if (v < BigInt("0")) r = ed25519.CURVE.l - (v * BigInt("-1"));
     return r > ed25519.CURVE.l || r < BigInt("0") ? await l_overflow_check(r) : r;
 }
 
@@ -168,7 +158,9 @@ export class Scalar {
  */
 export const rnd_scalar = async (): Promise<Scalar> => {
   const bytes = new Uint8Array(ed25519.utils.randomBytes(32));
-  return new Scalar(await byte_array_to_big_int(bytes));
+  return new Scalar(
+    await l_overflow_check(await byte_array_to_big_int(bytes))
+    );
 };
 
 /**
@@ -210,7 +202,7 @@ export const rnd_scalar = async (): Promise<Scalar> => {
     const r: string[] = [];
     if (await this.is_valid_length(v)) {
       for (let i = 0; i < v.length; ++i) {
-        r[i] = await t[i].add(v[i]).toHex();
+        r[i] = t[i].add(v[i]).toHex();
       }
     }
     return new PointVector(r);
@@ -225,10 +217,9 @@ export const rnd_scalar = async (): Promise<Scalar> => {
     const v = await sv.get_value();
     const t = await this.get_value();
     const r: string[] = [];
-    if (await this.is_valid_length(v)) {
+    if (await this.is_valid_length(v))
       for (let i = 0; i < v.length; ++i)
         r[i] = t[i].subtract(v[i]).toHex();
-    }
     return new PointVector(r);
   };
 
@@ -242,17 +233,13 @@ export const rnd_scalar = async (): Promise<Scalar> => {
     const sv_value: Scalar[] = sv instanceof ScalarVector ? await sv.get_value() : null;
     const s_value: Scalar = sv instanceof Scalar ? sv : null;
     const r: string[] = [];
-    if (sv_value && (await this.is_valid_length(sv_value))) {
+    if (sv_value && (await this.is_valid_length(sv_value)))
       // PointVector - ScalarVector: Hadamard Product 
-      for (let i = 0; i < sv_value.length; ++i) {
+      for (let i = 0; i < sv_value.length; ++i)
         r[i] = t[i].multiply(await sv_value[i].get_value()).toHex();
-      }
-    }
-    if (s_value) {
-      for (let i = 0; i < t.length; ++i) {
+    if (s_value)
+      for (let i = 0; i < t.length; ++i)
         r[i] = t[i].multiply(await s_value.get_value()).toHex();
-      }
-    }
     return new PointVector(r);
   };
 
@@ -275,69 +262,60 @@ export const rnd_scalar = async (): Promise<Scalar> => {
    * @returns {Promise<Scalar>} scalar
    */
   public pow = async (sv: ScalarVector): Promise<Scalar> => {
-    if (await this.is_valid_length(await sv.get_value())) {
+    if (await this.is_valid_length(await sv.get_value()))
       return this.multiexp(sv);
-    }
   }
 
   /**
-   * Multiscalar multiplication
-   * TODO: DEBUG
+   * Multiscalar multiplication - ScalarVector**PointVector
    * @param sv scalar vector
-   * @returns {Promise<ed25519.Point>}
+   * @returns {Promise<Scalar>}
    */
   private multiexp = async (sv: ScalarVector): Promise<Scalar> => {
-    if (await this.is_valid_length(await sv.get_value())) {
-      if (await (await sv.get_value()).length === 0)
+    const svalue = await sv.get_value();
+    const pa = await this.get_value();
+    if (await this.is_valid_length(svalue)) {
+      if (svalue.length === 0)
         return new Scalar(ed25519.Point.ZERO.y);
       let buckets: ed25519.Point[] = [];
-      let result: Scalar = new Scalar(ed25519.Point.ZERO.y);
-      const c = BigInt("4");
+      let result = ed25519.Point.ZERO;
+      const c = 4;
       // super hacky javascript reduce/accumulator logic for getting max scalar from vector
-      const maxscalar = await (await sv.get_value())
-        .reduce((a,b) => a.get_value() > b.get_value() ? a : b);
+      const maxscalar = svalue.reduce((a,b) => a.get_value() > b.get_value() ? a : b);
       let groups = BigInt("0");
       while (await maxscalar.get_value() >= BigInt("2")**groups)
-        groups += BigInt("1")
-      groups = groups + BigInt(groups + BigInt(c - BigInt("1"))) / BigInt(c);
+        groups += BigInt("1");
+      groups = (groups + BigInt(`${c}`) - BigInt("1")) / BigInt(c);
+      // loop
       for (let k = groups - BigInt("1"); k >= BigInt("-1"); --k) {
-        if (result !== new Scalar(ed25519.Point.ZERO.y)) {
-          for (let i = 0; i <= c; ++i)
-            result.add(await result.get_hex_value());
-        }
+        if (result.equals(ed25519.Point.ZERO))
+          for (let i = 0; i < c; ++i)
+            result = result.add(result);
         // clear all buckets
-        buckets = [
-          ed25519.Point.fromHex(
-            ed25519.utils.bytesToHex(
-              new Uint8Array(
-                await big_int_to_byte_array(ed25519.Point.ZERO.y*(BigInt("2")**c))
-              )
-            )
-          )
-        ]
+        buckets = [];
+        buckets.push(ed25519.Point.ZERO.multiply(BigInt("2")**BigInt(`${c}`)))
         // partition scalars into buckets
-        for (let i = 0; i <= (await sv.get_value()).length; ++i) {
+        for (let i = 0; i < svalue.length; ++i) {
           let bucket = 0;
-          for (let j = 0; j <= c; ++j) {
+          for (let j = 0; j < c; ++j) {
             const sa: Scalar[] = await sv.get_value();
-            if (await sa[i].get_value() & (BigInt("1") << BigInt(k)*c*BigInt(j)))
+            if (await sa[i].get_value() & (BigInt("1") << (BigInt(k)*BigInt(`${c}`)+BigInt(j))))
               bucket |= 1 << j;
           }
           if (bucket === 0) continue; // zero bucket is never used
-          const pa = await this.get_value();
-          if (buckets[bucket] !== ed25519.Point.ZERO)
-            buckets[bucket].add(pa[i]);
-          else
+          if (buckets[bucket] && !buckets[bucket].equals(ed25519.Point.ZERO)) 
+            buckets[bucket] = buckets[bucket].add(pa[i]);
+          else 
             buckets[bucket] = pa[i];
         }
         // sum all of the buckets
         let pail = ed25519.Point.ZERO;
-        for (let i = buckets.length - 1; i >= 0; --i) {
-          if (buckets[i] !== ed25519.Point.ZERO) pail = pail.add(buckets[i]);
-          if (pail !== ed25519.Point.ZERO) result = await result.add(pail.toHex())
+        for (let i = buckets.length - 1; i > 0; --i) {
+          if (!buckets[i].equals(ed25519.Point.ZERO)) pail = pail.add(buckets[i]);
+          if (!pail.equals(ed25519.Point.ZERO)) result = result.add(pail)
         }
       }
-    return result; 
+    return new Scalar(result.y);
     }
   }
 
@@ -387,11 +365,9 @@ export class ScalarVector {
     const v = await sv.get_value();
     const t = await this.get_value();
     const r: bigint[] = [];
-    if (await this.is_valid_length(v)) {
-      for (let i = 0; i < v.length; ++i) {
+    if (await this.is_valid_length(v))
+      for (let i = 0; i < v.length; ++i)
         r[i] = await (await v[i].add(await t[i].get_hex_value())).get_value();
-      }
-    }
     return new ScalarVector(r);
   };
 
@@ -476,7 +452,7 @@ export class ScalarVector {
    * @param {PointVector} v - point vector
    * @returns {Promise<Scalar>} scalar
    */
-  public pow = async (v: ScalarVector | PointVector): Promise<Scalar> => {
+  public pow = async (v: ScalarVector | PointVector):Promise<Scalar> => {
     const sv_value: Scalar[] = v instanceof ScalarVector 
       ? await v.get_value() : null;
     const pv_value: ed25519.Point[] = v instanceof PointVector 
@@ -496,9 +472,8 @@ export class ScalarVector {
   }
 
   private is_valid_length = async (v: Scalar[]): Promise<boolean> => {
-    if (v.length !== await (await this.get_value()).length) {
+    if (v.length !== await (await this.get_value()).length)
       throw new Error("Vectors must be the same length.");
-    }
     return true;
   };
 
