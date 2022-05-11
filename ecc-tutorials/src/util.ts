@@ -1,6 +1,8 @@
 import * as ed25519 from '@noble/ed25519';
 import blake2 from 'blake2';
 
+const cofactor = BigInt("8");
+
 /**
  * Convert BigInteger to byte array
  * @param {bigint} n - bigint value
@@ -182,6 +184,32 @@ export const hash_to_scalar = async (sa: string[]): Promise<Scalar> => {
       .update(Buffer.from(result)).digest('hex');
     if (parseInt(result, 16) < ed25519.CURVE.l)
       return new Scalar(BigInt(`0x${result}`));
+  }
+}
+
+/**
+ * Any data that can be converted to string can be input here.
+ * Convert string array of data to valid point. If passing a
+ * a point pass it by `ed25519.Point.toHex()`
+ * @param sa string array
+ * @returns {Promise<ed25519.Point>}
+ */
+ export const hash_to_point = async (sa: string[]): Promise<ed25519.Point> => {
+  let result = '';
+  sa.forEach(datum => {
+    result += blake2.createHash("blake2s")
+      .update(Buffer.from(datum)).digest('hex');
+  })
+  for (;;) {
+    result = blake2.createHash("blake2s").update(Buffer.from(result)).digest('hex');
+      let p: ed25519.Point;
+      const s = new Scalar(BigInt(`0x${result}`));
+      try {
+        p = ed25519.Point.fromHex(await s.get_hex_value());
+      } catch {
+        p = ed25519.Point.ZERO;
+      }
+      if (!p.equals(ed25519.Point.ZERO)) return p.multiply(cofactor);
   }
 }
 
