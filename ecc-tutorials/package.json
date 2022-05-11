@@ -31,9 +31,11 @@
   "dependencies": {
     "@noble/ed25519": "^1.6.0",
     "@scure/base": "^1.0.0",
+    "blake2": "^4.1.1",
     "keccak": "^3.0.2"
   },
   "devDependencies": {
+    "@types/blake2": "^4.0.1",
     "@types/jest": "^26.0.22",
     "@types/keccak": "^3.0.1",
     "@types/node": "^14.18.9",

@@ -1,4 +1,5 @@
 import * as ed25519 from '@noble/ed25519';
+import blake2 from 'blake2';
 
 /**
  * Convert BigInteger to byte array
@@ -105,7 +106,7 @@ export class Scalar {
    * @returns {Promise<Scalar>}
    */
   public add = async (v: string): Promise<Scalar> => {
-    const x = await byte_array_to_big_int(Buffer.from(await v, "hex"));
+    const x = await byte_array_to_big_int(Buffer.from(v, "hex"));
     return new Scalar(await l_overflow_check((await this.value) + x));
   };
 
@@ -125,7 +126,7 @@ export class Scalar {
    * @returns {Promise<Scalar>}
    */
   public multiply = async (v: string): Promise<Scalar> => {
-    const x = await byte_array_to_big_int(Buffer.from(await v, "hex"));
+    const x = await byte_array_to_big_int(Buffer.from(v, "hex"));
     return new Scalar(await l_overflow_check((await this.value) * x));
   };
 
@@ -147,7 +148,7 @@ export class Scalar {
    * @returns {Promise<Scalar>} exponential scalar
    */
   public exp = async (v: string): Promise<Scalar> => {
-    const n = await byte_array_to_big_int(Buffer.from(await v, "hex"));
+    const n = await byte_array_to_big_int(Buffer.from(v, "hex"));
     return new Scalar(await l_overflow_check((await this.value) ** n));
   };
 }
@@ -162,6 +163,27 @@ export const rnd_scalar = async (): Promise<Scalar> => {
     await l_overflow_check(await byte_array_to_big_int(bytes))
     );
 };
+
+/**
+ * Any data that can be converted to string can be input here.
+ * Convert string array of data to valid scalar. If passing a
+ * a scalar pass it by `Scalar.get_hex_value()`
+ * @param sa string array
+ * @returns {Promise<Scalar>}
+ */
+export const hash_to_scalar = async (sa: string[]): Promise<Scalar> => {
+  let result = '';
+  sa.forEach(datum => {
+    result += blake2.createHash("blake2s")
+      .update(Buffer.from(datum)).digest('hex');
+  })
+  for (;;) {
+    result = blake2.createHash("blake2s")
+      .update(Buffer.from(result)).digest('hex');
+    if (parseInt(result, 16) < ed25519.CURVE.l)
+      return new Scalar(BigInt(`0x${result}`));
+  }
+}
 
 /**
  * Create a Point Vector
