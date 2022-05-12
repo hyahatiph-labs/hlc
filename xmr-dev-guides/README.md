@@ -18,7 +18,7 @@ https://user-images.githubusercontent.com/13033037/166111393-63f759ea-4db9-461a-
 * node.js install with [nvm](https://github.com/nvm-sh/nvm)
     * `nvm install 16`
     * `node -v && npm -v`
-    * `source .profile` (in case shell doesn't pick up nvm download)
+    * [troubleshooting guide](https://github.com/nvm-sh/nvm#troubleshooting-on-linux)
 * [Jupyter](https://jupyter.org/install)
 * [tslab](https://github.com/yunabe/tslab)
 * VSCode with Jupyter Notebook extension, optional but hella clutch
@@ -50,15 +50,15 @@ see [docker.md](./docker.md)
 If you already know everything from the prerequisites then you probably will be bored here.
 
 Or if you just want to audit the material that is fine too. Here is the syllabus:
-* tutorial 1 - the setup
+* tutorial 1 - [the setup](./tutorial1.ipynb)
     * daemon rpc test
     * wallet rpc test
-* tutorial 2 - the daemon rpc
+* tutorial 2 - [the daemon rpc](./tutorial2.ipynb)
     * mini block explorer in Jupyter Notebook
     * Fee calculation
-* tutorial 3 - the wallet rpc
+* tutorial 3 - [the wallet rpc](./tutorial3.ipynb)
     * Create a functional wallet in Jupyter notebook
-    * Create a Multisig Wallet in Jupyter notebook
+    * Create a 2/3 threshold wallet in Jupyter notebook
 
 ## Goals
 
