@@ -1,4 +1,3 @@
-set up the notebook: https://fedoramagazine.org/jupyter-and-data-science-in-fedora/
 
 podman exec -it xmr-dev-guides /bin/bash
 
@@ -11,3 +10,7 @@ update password: jupyter notebook password
 start jupyter notebook: jupyter notebook
 
 go to: https://localhost:8888 on your machine
+
+________________________________________________________
+
+Reference: https://fedoramagazine.org/jupyter-and-data-science-in-fedora/

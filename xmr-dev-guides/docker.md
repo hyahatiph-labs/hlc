@@ -15,6 +15,8 @@ podman run --rm -P -p 127.0.0.1:8888:8888 --name xmr-dev-guides xmr-dev-guides:l
 In another terminal
 
 ```bash
+podman exec -it xmr-dev-guides /bin/bash
+
 su dev
 
 cd /home/dev

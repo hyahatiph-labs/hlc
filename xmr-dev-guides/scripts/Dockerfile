@@ -18,7 +18,8 @@ RUN dnf install -y wget curl git gnupg nodejs.x86_64 bzip2 \
 # Let's not use root
 RUN adduser dev
 # Clone xmr-dev-guides source code
-RUN cd /home/dev && git clone https://github.com/hyahatiph-labs/hlc.git && cd hlc/xmr-dev-guides && npm i
+RUN cd /home/dev && git clone https://github.com/hyahatiph-labs/hlc.git \
+    && cd hlc/xmr-dev-guides && npm i
 # Install tslab
 RUN npm i -g tslab
 RUN tslab install --version
