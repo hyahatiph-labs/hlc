@@ -488,14 +488,11 @@ export class ScalarVector {
 
   /**
    * Multiscalar multiplication
-   * @param {PointVector | ScalarVector} v point or scalar vector
-   * @returns {Promise<ed25519.Point>} Point
+   * @param {ScalarVector} v scalar vector
+   * @returns {Promise<Scalar>} Scalar
    */
-  public pow = async (v: ScalarVector | PointVector): Promise<ed25519.Point> => {
-    const sv_value: Scalar[] = v instanceof ScalarVector 
-      ? await v.get_value() : null;
-    const pv_value: ed25519.Point[] = v instanceof PointVector 
-      ? await v.get_value() : null;
+  public pow = async (v: ScalarVector): Promise<Scalar> => {
+    const sv_value: Scalar[] = await v.get_value();
     // ScalarVector**ScalarVector: inner product
     let r: Scalar = new Scalar(BigInt("0"));
     if (sv_value && await this.is_valid_length(sv_value)) {
@@ -504,9 +501,16 @@ export class ScalarVector {
         const m = n[i].multiply(await sv_value[i].get_value());
         r = await r.add(await (await m).get_value());
       }
-      return ed25519.Point.fromHex(await r.get_hex_value());
+      return r;
     }
-    if (pv_value) { return v.pow(this); }
+  }
+
+  /**
+   * Append Scalar to ScalarVector
+   * @param {Scalar} s scalar to append
+   */
+  public append = async (s: Scalar): Promise<void> => {
+    (await this.value).push(s);
   }
 
   private is_valid_length = async (v: Scalar[]): Promise<boolean> => {
