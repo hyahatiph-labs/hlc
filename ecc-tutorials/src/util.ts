@@ -139,6 +139,15 @@ export class Scalar {
     return new Scalar(ed25519.utils.mod(x ** v, ed25519.CURVE.l));
   };
 
+  /**
+   * Negate this Scalar
+   * @returns {Promise<Scalar>} Scalar
+   */
+  public negate = async (): Promise<Scalar> => {
+    const z = new Scalar(BigInt("0"));
+    return await z.subtract(await this.get_value())
+  }
+
 }
 
 /**
