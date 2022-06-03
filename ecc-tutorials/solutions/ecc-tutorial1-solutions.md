@@ -120,7 +120,7 @@ const rPedersen = async (): Promise<void> => {
     const c1 = p1.rGxH + p2.rGxH;                       // commit 1
     const c2 = ((p1.r + p2.r) * G) + ((x1 + x2) * H.y); // commit 2
     console.log(`pedersen(x1) + pedersen(x2) = ${c1}`);
-    console.log(`(r1 + r2)G + (x1 + x2)H = ${c1}`);
+    console.log(`(r1 + r2)G + (x1 + x2)H = ${c2}`);
     console.log(`commit1 === commit2: ${c1 === c2}`);   // test for homomorphicity
 }
 rPedersen();
