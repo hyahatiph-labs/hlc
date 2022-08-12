@@ -21,7 +21,7 @@ https://user-images.githubusercontent.com/13033037/166111393-63f759ea-4db9-461a-
     * [troubleshooting guide](https://github.com/nvm-sh/nvm#troubleshooting-on-linux)
 * [Jupyter](https://jupyter.org/install)
 * [tslab](https://github.com/yunabe/tslab)
-* VSCode with Jupyter Notebook extension, optional but hella clutch
+* VSCodium with Jupyter Notebook extension, optional but hella clutch
 * [Mastering Monero](https://masteringmonero.com/book/Mastering%20Monero%20First%20Edition%20by%20SerHack%20and%20Monero%20Community.pdf)
 * Know how to look up APIs in the [developer guides](https://www.getmonero.org/resources/developer-guides/) and rpc docs
 
